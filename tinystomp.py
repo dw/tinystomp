@@ -66,7 +66,7 @@ def iterlines(s, start, stop):
     """
     for m in _eol_pat.finditer(s, start, stop):
         mstart, end = m.span()
-        yield end + 1, s[start:mstart]
+        yield end, s[start:mstart]
         start = end
 
 
@@ -88,7 +88,7 @@ def _format(command, body, headers):
     bits.extend((
         '\n',
         body or '',
-        '\x00\n\n\n\n'
+        '\x00'
     ))
     return ''.join(bits)
 
@@ -123,6 +123,7 @@ def unsubscribe(destination, id_, **headers):
     """
     Generate a UNSUBSCRIBE frame.
     """
+    headers['destination'] = destination
     headers['id'] = id_
     return _format('UNSUBSCRIBE', '', headers)
 
