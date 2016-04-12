@@ -267,6 +267,8 @@ class Parser(object):
                 _, command = next(it)
 
             frame = Frame(command)
+            setdefault = frame.headers.setdefault
+
             while True:
                 end, line = next(it)
                 if not line:
@@ -275,7 +277,7 @@ class Parser(object):
                 key, sep, value = line.partition(':')
                 if not sep:
                     raise ProtocolError('header without colon')
-                frame.headers[key] = value
+                setdefault(key, value)
         except StopIteration:
             # Command or end-of-header separator missing.
             return False

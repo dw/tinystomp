@@ -202,6 +202,21 @@ class ParserTest(unittest.TestCase):
         assert p.frame_eof is None
 
 
+class ParserComplianceTest(unittest.TestCase):
+    def test_dup_headers_preserve_first(self):
+        # STOMP 1.2 "Repeated Header Entries" requires only the first header is
+        # preserved.
+        p = tinystomp.Parser()
+        p.receive('SEND\r\n'
+                  'key:value1\r\n'
+                  'key:value2\r\n'
+                  '\r\n'
+                  '\x00')
+
+        f = p.next()
+        assert f.headers['key'] == 'value1'
+
+
 class ParserReceiveTest(unittest.TestCase):
     def test_empty_str(self):
         p = tinystomp.Parser()
