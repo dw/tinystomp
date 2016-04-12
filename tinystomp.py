@@ -205,20 +205,54 @@ def disconnect(receipt, **headers):
 
 
 class Parser(object):
+    """
+    Incremental parser for a stream of STOMP formatted messages. Invoke
+    :py:meth:`receive` as often as desired when data arrives, then call
+    :py:meth:`can_read` afterwards in a loop to discover if there are fully
+    parsed messages waiting. If there are, call :py:meth:`next` to consume them
+    one at a time.
+
+    ::
+
+        p = tinystomp.Parser()
+        p.receive(tinystomp.send('/foo/bar', 'data', a='1'))
+        assert p.can_read()
+        f = p.next()
+        assert f.command == 'SEND'
+        assert f.body == 'data'
+        assert f.headers = {
+            'destination': '/foo/bar',
+            'a': '1',
+        }
+    """
     def __init__(self):
         self.s = ''
         self.frames = collections.deque()
         self.frame_eof = None
 
     def receive(self, s):
+        """
+        Consume the bytestring `s`.
+        """
         self.s += s
         while self._try_parse():
             pass
 
     def can_read(self):
+        """
+        Return ``True`` if there are unconsumed frames waiting to be read using
+        :py:meth:`next`.
+        """
         return len(self.frames) != 0
 
     def next(self):
+        """
+        Consume the next available frame, or raise IndexError if no frame is
+        available.
+        
+        :returns:
+            tinystomp.Frame instance.
+        """
         return self.frames.popleft()
 
     def _try_parse(self):
@@ -259,6 +293,23 @@ class Parser(object):
 
 
 class Client(object):
+    """
+    Dumb synchronous debug client suitable for scripts that perform simple
+    actions, like inject or monitor bus messages.
+
+    ::
+
+        c = tinystomp.Client('localhost', login='abc', passcode='def')
+        c.connect()
+        c.subscribe('/a/b')
+        while True:
+            print 'received frame:', c.next()
+
+    A magic :py:meth:`__getattr__` exists that forwards method calls with the
+    same name as a formatter function defined in the tinystomp module on to
+    that function, then sends its result to the server. This way every public
+    formatter function name is also a method name of this class.
+    """
     def __init__(self, host=None, port=None, login=None, passcode=None):
         self.host = host
         self.port = port
@@ -268,10 +319,16 @@ class Client(object):
 
     @classmethod
     def from_url(cls, url, **kwargs):
+        """
+        Construct an instance from a tcp://host:port/ URL.
+        """
         host, port = parse_url(url)
         return cls(host, port, **kwargs)
 
     def connect(self):
+        """
+        Create our TCP connection and send our CONNECT message.
+        """
         self.s = socket.socket()
         self.s.connect((self.host, self.port))
         extra = {}
@@ -281,6 +338,9 @@ class Client(object):
         self.s.send(connect(self.host, **extra))
 
     def next(self):
+        """
+        Block waiting for the next available frame, returning it when received.
+        """
         while not self.parser.can_read():
             s = self.s.recv(4096)
             if not s:
