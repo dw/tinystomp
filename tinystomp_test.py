@@ -60,24 +60,35 @@ class ParseUrlTest(unittest.TestCase):
         assert p == 1234
 
 
-class IterlinesTest(unittest.TestCase):
+class SplitFrameTest(unittest.TestCase):
+    def func(self, *args, **kwargs):
+        end, it = tinystomp.split_frame(*args, **kwargs)
+        return end, list(it)
+
     def test_empty(self):
-        assert [] == list(tinystomp.iterlines('', 0, 0))
+        assert (0, []) == self.func('', 0, 0)
 
     def test_oob(self):
-        assert [] == list(tinystomp.iterlines('dave\n', 5, 0))
+        assert (0, []) == self.func('dave\n', 5, 0)
 
     def test_offset(self):
-        assert [(5, 'ave')] == list(tinystomp.iterlines('dave\n', 1, 5))
+        assert (6, ['ave']) == self.func('dave\n\n', 1, 6)
 
     def test_several(self):
         s = '\ndave\ndave\n\n'
-        assert list(tinystomp.iterlines(s, 0, len(s))) == [
-            (1, ''),
-            (6, 'dave'),
-            (11, 'dave'),
-            (12, '')
-        ]
+        assert self.func(s, 0, len(s)) == (12, [
+            '',
+            'dave',
+            'dave',
+        ])
+
+    def test_prefix_eol_pairs_odd(self):
+        s = '\n\r\n\r\n\n\r\ndave\n\n'
+        assert self.func(s, 0, len(s)) == (14, ['', 'dave'])
+
+    def test_prefix_eol_pairs_even(self):
+        s = '\n\n\r\n\r\n\n\r\ndave\n\n'
+        assert self.func(s, 0, len(s)) == (15, ['dave'])
 
 
 class FormatTest(unittest.TestCase):

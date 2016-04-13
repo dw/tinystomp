@@ -82,7 +82,7 @@ def parse_url(url):
 
 
 _double_eol_pat = re.compile('\r?\n\r?\n')
-def split_frame_body(s, start, stop):
+def split_frame(s, start, stop):
     """
     Find and split all the command and header lines from the first frame in
     s[start:stop], returning the first offset past the end of the last line and
@@ -270,12 +270,11 @@ class Parser(object):
         if nul_pos == -1 or (self.frame_eof and len(self.s) < self.frame_eof):
             return
 
-        end, it = split_frame_body(self.s, 0, nul_pos)
+        end, it = split_frame(self.s, 0, nul_pos)
         try:
             command = next(it)
             if not command:
-                # split_frame_body() guarantees at most one blank line
-                # prefixing the headers.
+                # split_frame() guarantees at most one blank prefixing line.
                 command = next(it)
 
             frame = Frame(command)
