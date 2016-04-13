@@ -6,6 +6,10 @@ This is an ultra-minimal Stomp message generator and parser for Python. Why
 href="https://github.com/nikipore/stompest/">Stompest</a>, which is a more
 thoroughly developed module you should probably try first.
 
+However if you're planning on parsing more than 2500 messages/sec and hope to
+have at least half the CPU left for useful work, tinystomp may be a better
+option as half a CPU is closer to 30000 messages/sec.
+
 Unlike stompest, tinystop lacks:
 
 * Thorough conformance testing
@@ -32,7 +36,7 @@ stompest:
 
 tinystomp:
 
-    1000 loops, best of 3: 1.34 msec per loop
+    1000 loops, best of 3: 814 usec per loop
 
 
 ## Generation

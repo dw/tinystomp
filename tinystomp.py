@@ -81,16 +81,26 @@ def parse_url(url):
     return host, int(port)
 
 
-_eol_pat = re.compile('\r?\n')
-def iterlines(s, start, stop):
+_double_eol_pat = re.compile('\r?\n\r?\n')
+def split_frame_body(s, start, stop):
     """
-    Yield lines from a string, including the absolute starting offset of the
-    next line.
+    Find and split all the command and header lines from the first frame in
+    s[start:stop], returning the first offset past the end of the last line and
+    an iterable yielding the lines.
+
+    Ignores any pair of consecutive EOLs prefixing s to prevent header parsing
+    from failing when vertical whitespace is present (allowed by the protocol).
     """
-    for m in _eol_pat.finditer(s, start, stop):
-        mstart, end = m.span()
-        yield end, s[start:mstart]
-        start = end
+    for m in _double_eol_pat.finditer(s, start, stop):
+        mstart, mend = m.span()
+        # If the span starts where we started matching, then a pair of
+        # prefixing EOLs have been found. Note the new starting position and
+        # continue looping in that case.
+        if start != mstart:
+            lines = s[start:mstart].splitlines()
+            return mend, iter(lines)
+        start = mend
+    return 0, iter(())
 
 
 #
@@ -260,20 +270,18 @@ class Parser(object):
         if nul_pos == -1 or (self.frame_eof and len(self.s) < self.frame_eof):
             return
 
-        it = iterlines(self.s, 0, nul_pos)
+        end, it = split_frame_body(self.s, 0, nul_pos)
         try:
-            command = ''
-            while command == '':
-                _, command = next(it)
+            command = next(it)
+            if not command:
+                # split_frame_body() guarantees at most one blank line
+                # prefixing the headers.
+                command = next(it)
 
             frame = Frame(command)
             setdefault = frame.headers.setdefault
 
-            while True:
-                end, line = next(it)
-                if not line:
-                    break
-
+            for line in it:
                 key, sep, value = line.partition(':')
                 if not sep:
                     raise ProtocolError('header without colon')
