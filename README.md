@@ -1,4 +1,11 @@
 
+# NOTICE
+
+The Stompest maintainer has faithfully copied the approach taken by this parser
+and <a href="https://github.com/dw/tinystomp/issues/1">integrated it back into
+Stompest</a>, and fixed some edge cases in the process. There should no longer
+be any reason to use tinystomp.
+
 # tinystomp
 
 This is an ultra-minimal Stomp message generator and parser for Python. Why
